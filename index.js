@@ -2,17 +2,15 @@ const http = require('http');
 const https = require('https');
 const url = require('url');
 const StringDecoder = require('string_decoder').StringDecoder;
-const config = require('./config');
+const config = require('./lib/config');
 const fs = require('fs');
-const _data = require('./lib/data');
+const handlers = require('./lib/handlers');
+const helpers = require('./lib/helpers');
+
 const httpServer = http.createServer((req, res) => {
     unifiedServer(req, res);
 });
 
-
-_data.create('test', 'newFile', {'foo' : 'bar'}, (err) => {
-    console.log('this was the error: ', err);
-});
 
 // Start the Server, and have it listen on port 3000 if no other is specified
 httpServer.listen(config.httpPort, () => console.log('The server is listening on port ' + config.httpPort));
@@ -45,6 +43,9 @@ function unifiedServer(req, res) {
     // Get the HTTP Method
     const method = req.method.toLocaleLowerCase();
 
+    // Get the header as an object
+    const headers = req.headers;
+
     // Get the payload, if any
     const decoder = new StringDecoder('utf-8');
     let buffer = '';
@@ -57,7 +58,7 @@ function unifiedServer(req, res) {
         buffer += decoder.end();
 
         // Choose the handler this request should go to.
-        const chosenHandler = typeof(router[trimmedPath]) !== 'undefined' ? router[trimmedPath] : handlers.notFound;
+        const chosenHandler = typeof(handlers[trimmedPath]) !== 'undefined' ? handlers[trimmedPath] : handlers.notFound;
         
         // Construct the object to send to the handler
         const data = {
@@ -65,7 +66,7 @@ function unifiedServer(req, res) {
             'queryStringObject' : queryStringObject,
             'method' : method,
             'headers' : headers,
-            'payload' : buffer
+            'payload' : helpers.parseJsonToObject(buffer)
         };
         
         // Route the request to the handler specified in the router
@@ -88,28 +89,4 @@ function unifiedServer(req, res) {
             console.log('Returning this response ', statusCode, payloadString);
         });
     });
-
-    // Get the header as an object
-    const headers = req.headers;
-
-    console.log('Request received on path: ' + trimmedPath + 'with method: ' + method + ' and with these query string parameters ', queryStringObject);
-    console.log('Received these headers', headers);
-};
-
-// Define Handlers
-const handlers = {};
-
-// Ping Handler
-handlers.ping = function(data, callback) {
-    // Callback a http status code, and a payload object
-    callback(200);
-};
-
-// Not found handler
-handlers.notFound = function(data, callback) {
-    callback(404);
-};
-
-const router = {
-    'ping' : handlers.ping
 };
