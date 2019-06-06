@@ -59,7 +59,7 @@ function unifiedServer(req, res) {
 
         // Choose the handler this request should go to.
         const chosenHandler = typeof(handlers[trimmedPath]) !== 'undefined' ? handlers[trimmedPath] : handlers.notFound;
-        
+
         // Construct the object to send to the handler
         const data = {
             'trimmedPath' : trimmedPath,
